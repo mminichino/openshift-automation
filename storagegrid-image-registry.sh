@@ -45,6 +45,6 @@ oc create secret generic image-registry-private-configuration-user \
         --from-literal=REGISTRY_STORAGE_S3_SECRETKEY=${SGENCSECRET} \
         --namespace openshift-image-registry
 
-oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch "{\"spec\":{\"storage\": {\"s3\": [{\"bucket\":\"${BUCKET}\",\"region\":\"${REGION}\",\"regionEndpoint\":\"${LBENDPOINT}\"}]}}}"
+oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch "{\"spec\":{\"storage\": {\"s3\": {\"bucket\":\"${BUCKET}\",\"region\":\"${REGION}\",\"regionEndpoint\":\"${LBENDPOINT}\"}}}}"
 oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch '{"spec":{"defaultRoute":true}}'
-oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch '{"spec":{"ManagementState":Managed}}'
+oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch '{"spec":{"managementState":"Managed"}}'
