@@ -27,7 +27,6 @@ if [ -z "$REGISTRY" -o -z "$VERSION" ]
 then
    print_usage
 else
-#   CHECK=$(echo $VERSION | sed -e 's/^[0-9]*\.[0-9]*\.[0-9]*$/X/')
    CHECK=$(echo $VERSION | sed -e 's/^[0-9]*\.[0-9]*$/X/')
    if [ "$CHECK" != "X" ]
    then

@@ -11,7 +11,7 @@ read SGSECRET
 echo -n "StorageGRID LB Bucket: "
 read BUCKET
 
-echo -n "StorageGRID LB End Point: "
+echo -n "StorageGRID LB End Point (FQDN): "
 read LBENDPOINT
 
 echo -n "StorageGRID Region: [$REGION]: "
@@ -22,12 +22,12 @@ then
    REGION=$NEWREGION
 fi
 
-SGENCKEY=$(echo $SGKEY | base64 -w0)
-SGENCSECRET=$(echo $SGSECRET | base64 -w0)
+#SGENCKEY=$(echo $SGKEY | base64 -w0)
+#SGENCSECRET=$(echo $SGSECRET | base64 -w0)
 LBENDPOINT=$(echo "https://$LBENDPOINT")
 
-echo "S3 Key:    $SGENCKEY"
-echo "Secret:    $SGENCSECRET"
+echo "S3 Key:    $SGKEY"
+echo "Secret:    $SGSECRET"
 echo "Bucket:    $BUCKET"
 echo "End Point: $LBENDPOINT"
 echo "Region:    $REGION"
@@ -40,9 +40,15 @@ then
    exit 1
 fi
 
+if [ "$(oc get secret image-registry-private-configuration-user -n openshift-image-registry -o json | jq -r '.kind')" = "Secret" ]
+then
+    echo "Removing old secret ..."
+    oc delete secret image-registry-private-configuration-user -n openshift-image-registry
+fi
+
 oc create secret generic image-registry-private-configuration-user \
-        --from-literal=REGISTRY_STORAGE_S3_ACCESSKEY=${SGENCKEY} \
-        --from-literal=REGISTRY_STORAGE_S3_SECRETKEY=${SGENCSECRET} \
+        --from-literal=REGISTRY_STORAGE_S3_ACCESSKEY=${SGKEY} \
+        --from-literal=REGISTRY_STORAGE_S3_SECRETKEY=${SGSECRET} \
         --namespace openshift-image-registry
 
 oc patch configs.imageregistry.operator.openshift.io/cluster --type merge --patch "{\"spec\":{\"storage\": {\"s3\": {\"bucket\":\"${BUCKET}\",\"region\":\"${REGION}\",\"regionEndpoint\":\"${LBENDPOINT}\"}}}}"

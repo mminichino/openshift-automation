@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+NODE=""
+function print_usage () {
+   echo "$0 -n node"
+   exit 1
+}
+
+while getopts n: optargs
+do
+    case "${optargs}" in
+        n) NODE=$OPTARG
+           ;;
+       \?) print_usage
+           ;;
+    esac
+done
+
+if [ -z "$NODE" ]
+then
+   print_usage
+   exit 1
+fi
+
+NODEIP=$(oc get nodes -o wide | grep "^${NODE}" | tr -s ' ' | cut -d ' ' -f 6)
+CHECK=$(echo $NODEIP | sed -e 's/^[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*$/X/')
+
+if [ "$CHECK" != "X" ]
+then
+   echo "Error: Can not find node $NODE"
+   exit 1
+fi
+
+oc adm cordon $NODE
+oc adm drain $NODE --delete-local-data --ignore-daemonsets --force
+
+echo "Rebooting node $NODE ..."
+ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -l core $NODEIP 'sudo systemctl reboot'
+
+echo "Waiting for $NODE to become ready ..."
+sleep 30
+while true
+do
+  NODESTATUS=$(oc get nodes | grep "^${NODE}" | tr -s ' ' | cut -d ' ' -f 2)
+  NODESTATUS=$(echo $NODESTATUS | cut -d ',' -f 1)
+  if [ "$NODESTATUS" = "Ready" ]
+  then
+      oc adm uncordon $NODE
+      break
+  fi
+done
